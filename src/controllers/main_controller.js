@@ -62,6 +62,41 @@ export const mainCtr = {
   POST_LIKES: async (req, res) => {
     const { post_id, user_id } = req.body;
 
+    const likesNum = await pool.query(`SELECT * FROM likes where post_id=$1`, [
+      post_id,
+    ]);
+
+    if (!likesNum.rows[0]) {
+      await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [post_id]);
+    }
+
+    const userId = await pool.query(
+      `SELECT user_id from likes where $1 =ANY(user_id)`,
+      [user_id]
+    );
+
+    let likeResult = 0;
+
+    if (!userId.rows[0]) {
+      likeResult = likesNum.rows[0].likes + 1;
+
+      await pool.query(
+        `UPDATE likes SET likes=$1, user_id=array_append(user_id, $2) where post_id=$3`,
+        [likeResult, user_id, post_id]
+      );
+
+      return res.send("Like");
+    }
+
+    likeResult = likesNum.rows[0].likes - 1;
+
+    await pool.query(
+      `UPDATE likes SET likes=$1, user_id=array_remove(user_id, $2) where post_id=$3`,
+      [likeResult, user_id, post_id]
+    );
+
+    return res.send("Dislike");
+
     // const foundUser = await pool.query(`SELECT * FROM likes where user_id=$1`, [
     //   user_id,
     // ]);
@@ -70,49 +105,49 @@ export const mainCtr = {
     //   await pool.query(`UPDATE likes SET=-1`);
     // }
 
-    const postId = await pool.query(`SELECT * from likes where post_id=$1`, [
-      post_id,
-    ]);
+    // const postId = await pool.query(`SELECT * from likes where post_id=$1`, [
+    //   post_id,
+    // ]);
 
-    const likes = postId.rows[0].likes;
+    // const likes = postId.rows[0].likes;
 
-    let likeResult = 0;
+    // let likeResult = 0;
 
-    const isLiked = await pool.query(
-      `SELECT isliked from users where user_id=$1`,
-      [user_id]
-    );
+    // const isLiked = await pool.query(
+    //   `SELECT isliked from users where user_id=$1`,
+    //   [user_id]
+    // );
 
-    console.log(isLiked.rows[0].isliked);
+    // console.log(isLiked.rows[0].isliked);
 
-    if (isLiked.rows[0].isliked === true && likes !== 0) {
-      likeResult = likes - 1;
+    // if (isLiked.rows[0].isliked === true && likes !== 0) {
+    //   likeResult = likes - 1;
 
-      console.log(likeResult);
+    //   console.log(likeResult);
 
-      await pool.query(`UPDATE users SET isliked=false where user_id=$1`, [
-        user_id,
-      ]);
+    //   await pool.query(`UPDATE users SET isliked=false where user_id=$1`, [
+    //     user_id,
+    //   ]);
 
-      await pool.query(`UPDATE likes SET likes=$1 where post_id='1'`, [
-        likeResult,
-      ]);
+    //   await pool.query(`UPDATE likes SET likes=$1 where post_id='1'`, [
+    //     likeResult,
+    //   ]);
 
-      return res.status(201).send("Dislike");
-    }
+    //   return res.status(201).send("Dislike");
+    // }
 
-    await pool.query(`UPDATE users SET isliked=true where user_id=$1`, [
-      user_id,
-    ]);
+    // await pool.query(`UPDATE users SET isliked=true where user_id=$1`, [
+    //   user_id,
+    // ]);
 
-    likeResult = likes + 1;
+    // likeResult = likes + 1;
 
-    console.log(likeResult);
+    // console.log(likeResult);
 
-    await pool.query(`UPDATE likes SET likes=$1 where post_id='1'`, [
-      likeResult,
-    ]);
-    return res.send("OK");
+    // await pool.query(`UPDATE likes SET likes=$1 where post_id='1'`, [
+    //   likeResult,
+    // ]);
+    // return res.send("OK");
   },
   UPDATE_USER_VIDEOS: async (req, res) => {
     try {

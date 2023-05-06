@@ -6,13 +6,14 @@ CREATE TABLE users(
      user_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
      username VARCHAR(50) NOT NULL,
      user_email VARCHAR(50) UNIQUE NOT NULL,
-     password VARCHAR(30) NOT NULL,
+     password VARCHAR(30) NOT NULL
 );
 
 CREATE TABLE likes(
-     user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+     like_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+     user_id VARCHAR[] UNIQUE,
      post_id VARCHAR UNIQUE, 
-     likes INT DEFAULT 0,
+     likes INT DEFAULT 0
 
 );
 
@@ -334,9 +335,9 @@ UPDATE likes SET likes = +1 where post_id='1';
 
   CREATE TABLE likes(
     like_id VARCHAR DEFAULT gen_random_uuid(),
-    user_id VARCHAR, 
-      likes INT DEFAULT 0,
-      post_id VARCHAR
+    user_id VARCHAR[], 
+    likes INT DEFAULT 0,
+    post_id VARCHAR
 
   );
 
@@ -348,5 +349,17 @@ UPDATE likes SET likes = +1 where post_id='1';
 
   );
 
+  --ARRAYS
+
+
+INSERT INTO likes (user_id)
+VALUES(ARRAY ['2']) where user_id = '2'; -- add array
 
 INSERT INTO users(username) VALUES('1');
+
+
+UPDATE likes SET user_id = array_append(user_id, '330') WHERE like_id='17c1f545-21ff-4f0b-9c20-dfa3de1f35e4';
+
+--add to an existing array
+
+SELECT * FROM likes WHERE '330' = ANY(user_id); --search
