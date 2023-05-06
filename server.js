@@ -5,6 +5,7 @@ import fileUpload from "express-fileupload";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRouter from "./src/routers/auth_router.js";
+import mainRouter from "./src/routers/main_routes.js";
 const app = express();
 
 export const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +27,7 @@ app.use(express.static(path.join(process.cwd(), "/upload_video")));
 app.use(fileUpload());
 dotenv.config();
 app.use("/lamasocial", authRouter);
-// app.use("/admin", videoRouter);
+app.use("/lamasocial", mainRouter);
 const PORT = process.env.PORT || 1201;
 
 app.listen(PORT, () => {

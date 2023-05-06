@@ -9,16 +9,17 @@ CREATE TABLE users(
      password VARCHAR(30) NOT NULL,
 );
 
-CREATE TABLE user_datas(
+CREATE TABLE likes(
      user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-     profile_img_id VARCHAR UNIQUE REFERENCES 
-     username VARCHAR(50) NOT NULL,
-     user_email VARCHAR(50) UNIQUE NOT NULL,
-     password VARCHAR(30) NOT NULL,
+     post_id VARCHAR UNIQUE, 
+     likes INT DEFAULT 0,
+
 );
 
-CREATE TABLE files(
-     user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id),
+
+CREATE TABLE posts(
+     post_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid()
+     user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id)  ON DELETE CASCADE,
      filename varchar,
      size INT,
      mimetype VARCHAR,
@@ -322,6 +323,30 @@ JOIN emails e
 ON e.id = com.company_email_id
 WHERE car.company_id = '48e53fde-66ad-4660-8540-ea8683ac70f9';
 
+--------------------draft
+
+INSERT INTO likes(post_id, user_id) VALUES('1', '2');
+SELECT * from likes where like_id = '8ae8ef14-b048-4e67-9cee-e6b1df0da6cc',
+UPDATE likes SET likes = +1 where post_id='1';
 
 
 
+
+  CREATE TABLE likes(
+    like_id VARCHAR DEFAULT gen_random_uuid(),
+    user_id VARCHAR, 
+      likes INT DEFAULT 0,
+      post_id VARCHAR
+
+  );
+
+
+    CREATE TABLE users(
+     username VARCHAR,
+    user_id VARCHAR DEFAULT gen_random_uuid(), 
+     isLiked BOOLEAN DEFAULT false
+
+  );
+
+
+INSERT INTO users(username) VALUES('1');
