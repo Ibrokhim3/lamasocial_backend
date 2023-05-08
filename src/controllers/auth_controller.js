@@ -7,9 +7,15 @@ import { __filename } from "../../server.js";
 import { rmSync } from "fs";
 
 export const authCtr = {
+  //updateUsers API
+  GET_USERS: async (req, res) => {
+    const users = await pool.query(`SELECT * FROM users`);
+
+    return res.json(users.rows);
+  },
   REGISTER: async (req, res) => {
     try {
-      const { username, password, email, password2 } = req.body;
+      const { username, password, user_email, password2 } = req.body;
       // const { name, data, mimetype, size } = req.files.img;
       // const filename = Date.now() + path.extname(name);
 
@@ -24,6 +30,14 @@ export const authCtr = {
         return res.send("Username already exists");
       }
 
+      const users = await pool.query(`SELECT * from users`);
+
+      const userEmail = users.rows.find((u) => u.user_email === user_email);
+
+      if (userEmail.user_email === user_email) {
+        return res.status(200).send("This email already exists");
+      }
+
       if (password !== password2) {
         return res
           .status(400)
@@ -35,8 +49,8 @@ export const authCtr = {
       // const url = path.join(__dirname, "./upload_img/", filename);
 
       await pool.query(
-        `INSERT INTO users(username, email, password) VALUES($1, $2, $3)`,
-        [username, email, hashPsw]
+        `INSERT INTO users(username, user_email, password) VALUES($1, $2, $3)`,
+        [username, user_email, hashPsw]
       );
 
       // req.files.img.mv(url, function (err) {
@@ -50,20 +64,12 @@ export const authCtr = {
       return console.log(error.message);
     }
   },
-  GET_USERS: async (req, res) => {
-    const { id } = req.params;
-    const images = await pool.query(`SELECT * FROM image_files where id=$1`, [
-      id,
-    ]);
-
-    return res.json(images.rows[0]);
-  },
   LOGIN: async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { user_email, password } = req.body;
       const foundedUser = await pool.query(
-        `SELECT * FROM users WHERE username = $1`,
-        [username]
+        `SELECT * FROM users WHERE user_email = $1`,
+        [user_email]
       );
       if (!foundedUser.rows[0]) {
         return res.status(404).send("User not found");
@@ -78,7 +84,7 @@ export const authCtr = {
       let token = jwt.sign(
         {
           user_id: foundedUser.rows[0].user_id,
-          username: foundedUser.rows[0].user_name,
+          user_email: foundedUser.rows[0].user_email,
           // profile_img: foundedUser.rows[0].profile_img,
         },
         process.env.SECRET_KEY,
@@ -94,18 +100,18 @@ export const authCtr = {
 
       if (!jwtInfo.rows[0]) {
         await pool.query(
-          `INSERT INTO jwt(user_id, username, token) VALUES($1, $2,$3) `,
-          [user_id, username, token]
+          `INSERT INTO jwt(user_id, user_email, token) VALUES($1, $2,$3) `,
+          [user_id, user_email, token]
         );
       }
-      await pool.query(`UPDATE jwt SET user_id=$1, username=$2, token=$3`, [
+      await pool.query(`UPDATE jwt SET user_id=$1, user_email=$2, token=$3`, [
         user_id,
-        username,
+        user_email,
         token,
       ]);
 
       return res.status(201).send({
-        msg: `You're logged in as a(n) ${username}!`,
+        msg: `You're logged in!`,
         token,
       });
     } catch (error) {

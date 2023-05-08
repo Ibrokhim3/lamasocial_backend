@@ -19,13 +19,23 @@ CREATE TABLE likes(
 
 
 CREATE TABLE posts(
-     post_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid()
+     post_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
      user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id)  ON DELETE CASCADE,
      filename varchar,
      size INT,
      mimetype VARCHAR,
      uploaded_time TIMESTAMP(0) DEFAULT current_timestamp
 
+
+);
+
+CREATE TABLE avatar(
+     avatar_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+     user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id)  ON DELETE CASCADE,
+     filename varchar,
+     file_url VARCHAR, 
+     size INT,
+     mimetype VARCHAR
 
 );
 
