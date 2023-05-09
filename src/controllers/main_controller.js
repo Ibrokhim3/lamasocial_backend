@@ -5,13 +5,15 @@ import { __filename } from "../../server.js";
 import cloudinary from "cloudinary";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime.js";
+import jwt from "jsonwebtoken";
+import { log } from "console";
 
 export const mainCtr = {
   GET_POSTS: async (req, res) => {
     try {
       const posts = await pool.query(
         //hammasini select qilish shart emas
-        `SELECT * FROM posts p JOIN users u ON p.created_by = u.user_id`
+        `SELECT * FROM posts p JOIN users u ON p.created_by = u.user_id JOIN avatar a ON a.user_id=u.user_id JOIN likes l ON l.post_id=p.post_id`
       );
 
       res.status(200).send(posts.rows);
@@ -29,7 +31,9 @@ export const mainCtr = {
 
       const { post_url, name, mimetype, size, public_id } = req.body;
 
-      const filename = Date.now() + path.extname(name);
+      console.log(post_url);
+
+      // const filename = Date.now() + path.extname(name);
 
       // const url = path.join(__dirname, "./upload_video/", filename);
 
@@ -63,7 +67,7 @@ export const mainCtr = {
       //   }
       // });
 
-      res.status(201).send("Post uploaded successfully!");
+      res.status(201).json("Post uploaded successfully!");
     } catch (error) {
       return console.log(error.message);
     }
@@ -79,7 +83,10 @@ export const mainCtr = {
     }
   },
   POST_LIKES: async (req, res) => {
-    const { post_id, user_id } = req.body;
+    const { post_id } = req.body;
+    const { token } = req.headers;
+
+    const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
     const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
       post_id,
@@ -90,8 +97,8 @@ export const mainCtr = {
     }
 
     const userId = await pool.query(
-      `SELECT user_id from likes where $1 =ANY(user_id)`,
-      [user_id]
+      `SELECT user_id from likes where $1 =ANY(user_id) AND post_id=$2`,
+      [user_id, post_id]
     );
 
     let likeResult = 0;

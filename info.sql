@@ -33,11 +33,22 @@ CREATE TABLE avatar(
      avatar_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
      user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id)  ON DELETE CASCADE,
      filename varchar,
-     file_url VARCHAR, 
+     avatar_url VARCHAR, 
      size INT,
      mimetype VARCHAR
 
 );
+
+CREATE TABLE cover(
+     cover_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+     user_id VARCHAR UNIQUE NOT NULL REFERENCES users(user_id)  ON DELETE CASCADE,
+     filename varchar,
+     cover_url VARCHAR, 
+     size INT,
+     mimetype VARCHAR
+
+);
+
 
 CREATE TABLE jwt(
      user_id VARCHAR UNIQUE NOT NULL,
@@ -373,3 +384,8 @@ UPDATE likes SET user_id = array_append(user_id, '330') WHERE like_id='17c1f545-
 --add to an existing array
 
 SELECT * FROM likes WHERE '330' = ANY(user_id); --search
+
+
+
+ALTER TABLE likes
+DROP CONSTRAINT likes_user_id_key;

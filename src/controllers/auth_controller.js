@@ -15,7 +15,15 @@ export const authCtr = {
   },
   REGISTER: async (req, res) => {
     try {
-      const { username, password, user_email, password2 } = req.body;
+      const {
+        username,
+        password,
+        user_email,
+        password2,
+        avatar_url,
+        cover_url,
+      } = req.body;
+
       // const { name, data, mimetype, size } = req.files.img;
       // const filename = Date.now() + path.extname(name);
 
@@ -34,8 +42,8 @@ export const authCtr = {
 
       const userEmail = users.rows.find((u) => u.user_email === user_email);
 
-      if (userEmail.user_email === user_email) {
-        return res.status(200).send("This email already exists");
+      if (userEmail) {
+        return res.status(400).send("This email already exists");
       }
 
       if (password !== password2) {
@@ -48,10 +56,20 @@ export const authCtr = {
 
       // const url = path.join(__dirname, "./upload_img/", filename);
 
-      await pool.query(
-        `INSERT INTO users(username, user_email, password) VALUES($1, $2, $3)`,
+      const userId = await pool.query(
+        `INSERT INTO users(username, user_email, password) VALUES($1, $2, $3) returning user_id`,
         [username, user_email, hashPsw]
       );
+
+      await pool.query(
+        `INSERT INTO avatar(avatar_url, user_id) VALUES($1, $2)`,
+        [avatar_url, userId.rows[0].user_id]
+      );
+
+      await pool.query(`INSERT INTO cover(cover_url, user_id) VALUES($1,$2)`, [
+        cover_url,
+        userId.rows[0].user_id,
+      ]);
 
       // req.files.img.mv(url, function (err) {
       //   if (err) {
@@ -59,7 +77,7 @@ export const authCtr = {
       //   }
       // });
 
-      return res.status(201).send("User successfully registrated!");
+      return res.status(201).json("User successfully registrated!");
     } catch (error) {
       return console.log(error.message);
     }
@@ -110,7 +128,7 @@ export const authCtr = {
         token,
       ]);
 
-      return res.status(201).send({
+      return res.status(201).json({
         msg: `You're logged in!`,
         token,
       });
