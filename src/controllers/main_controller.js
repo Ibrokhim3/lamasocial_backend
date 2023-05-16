@@ -13,10 +13,19 @@ export const mainCtr = {
     try {
       const posts = await pool.query(
         //hammasini select qilish shart emas
-        `SELECT * FROM posts p JOIN users u ON p.created_by = u.user_id JOIN avatar a ON a.user_id=u.user_id JOIN likes l ON l.post_id=p.post_id`
+        `SELECT * FROM posts p JOIN users u ON p.created_by = u.user_id JOIN avatar a ON a.user_id=p.created_by JOIN likes l ON p.post_id=l.post_id`
       );
 
-      res.status(200).send(posts.rows);
+      const { token } = req.headers;
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+      const userInfo = await pool.query(
+        `SELECT * FROM avatar a JOIN cover c ON a.user_id=c.user_id JOIN users u ON a.user_id=u.user_id where a.user_id=$1`,
+        [user_id]
+      );
+
+      //Select avatar_url va cover_url bolsa yaxshi ortiqcha narsa kerak emas
+
+      res.status(200).send({ posts: posts.rows, user: userInfo.rows });
     } catch (error) {
       return console.log(error.message);
     }
@@ -37,10 +46,20 @@ export const mainCtr = {
 
       // const url = path.join(__dirname, "./upload_video/", filename);
 
-      const time = await pool.query(
-        `INSERT INTO posts(created_by, post_url, size) VALUES($1, $2, $3) RETURNING uploaded_time `,
+      const postInfo = await pool.query(
+        `INSERT INTO posts(created_by, post_url, size) VALUES($1, $2, $3) RETURNING uploaded_time, post_id `,
         [user_id, post_url, (+size / 1048576).toFixed(2)]
       );
+
+      const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
+        postInfo.rows[0].post_id,
+      ]);
+
+      if (!isLiked.rows[0]) {
+        await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [
+          postInfo.rows[0].post_id,
+        ]);
+      }
 
       let ts = Date.now();
 
@@ -55,7 +74,7 @@ export const mainCtr = {
 
       dayjs.extend(relativeTime);
 
-      let a = dayjs(time.rows[0].uploaded_time);
+      let a = dayjs(postInfo.rows[0].uploaded_time);
 
       const timeAgo = dayjs().from(a);
 
@@ -74,8 +93,12 @@ export const mainCtr = {
   },
   GET_USER_FRIENDS: async (req, res) => {
     try {
+      const { token } = req.headers;
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+
       const userFriends = await pool.query(
-        `SELECT u.username, a.file_url FROM users u FULL JOIN avatar a ON u.user_id = a.user_id`
+        `SELECT u.username, a.avatar_url FROM users u JOIN avatar a ON u.user_id = a.user_id where u.user_id != $1`,
+        [user_id]
       );
       res.status(200).send(userFriends.rows);
     } catch (error) {
@@ -88,13 +111,13 @@ export const mainCtr = {
 
     const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
-    const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
-      post_id,
-    ]);
+    // const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
+    //   post_id,
+    // ]);
 
-    if (!isLiked.rows[0]) {
-      await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [post_id]);
-    }
+    // if (!isLiked.rows[0]) {
+    //   await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [post_id]);
+    // }
 
     const userId = await pool.query(
       `SELECT user_id from likes where $1 =ANY(user_id) AND post_id=$2`,

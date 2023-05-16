@@ -13,6 +13,15 @@ export const authCtr = {
 
     return res.json(users.rows);
   },
+  GET_USER_INFO: async (req, res) => {
+    const { token } = req.headers;
+    const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+    const user = await pool.query(`SELECT * FROM users where user_id=$1`, [
+      user_id,
+    ]);
+
+    return res.json(user.rows[0]);
+  },
   REGISTER: async (req, res) => {
     try {
       const {
@@ -128,10 +137,73 @@ export const authCtr = {
         token,
       ]);
 
+      await pool.query(`UPDATE users SET islogged=true where user_id=$1`, [
+        user_id,
+      ]);
+
       return res.status(201).json({
         msg: `You're logged in!`,
         token,
       });
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
+  UPDATE_USER: async (req, res) => {
+    try {
+      const { token } = req.headers;
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+      let { username, user_email, password, avatar_url, cover_url } = req.body;
+
+      const foundUser = await pool.query(
+        `SELECT * FROM users WHERE user_id=$1`,
+        [user_id]
+      );
+
+      const foundFiles = await pool.query(
+        `SELECT a.avatar_url, c.cover_url from avatar a JOIN cover c ON a.user_id=c.user_id`
+      );
+
+      if (!foundUser.rows[0]) {
+        return res.status(404).send("User not found!");
+      }
+
+      const hashPsw = await bcrypt.hash(password, 12);
+
+      const {
+        username: u_username,
+        user_email: u_user_email,
+        password: u_password,
+      } = foundUser.rows[0];
+
+      const { avatar_url: a_avatar_url, cover_url: c_cover_url } =
+        foundFiles.rows[0];
+
+      username = username ? username : u_username;
+      user_email = user_email ? user_email : u_user_email;
+      password = password ? hashPsw : u_password;
+      avatar_url = avatar_url ? avatar_url : a_avatar_url;
+      cover_url = cover_url ? cover_url : c_cover_url;
+
+      await pool.query(
+        `UPDATE users SET 
+        username=$1, user_email=$2, password=$3 where user_id=$4`,
+        [username, user_email, password, user_id]
+      );
+
+      await pool.query(
+        `UPDATE avatar SET 
+        avatar_url=$1 where user_id=$2`,
+        [avatar_url, user_id]
+      );
+
+      await pool.query(
+        `UPDATE cover SET 
+        cover_url=$1 where user_id=$2`,
+        [cover_url, user_id]
+      );
+
+      res.status(200).json(`Updated successfully`);
     } catch (error) {
       return console.log(error.message);
     }
