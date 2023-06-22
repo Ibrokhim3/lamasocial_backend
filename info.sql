@@ -398,3 +398,10 @@ ALTER TABLE users ADD COLUMN profile_img_url VARCHAR UNIQUE,
 ADD COLUMN cover_img_url VARCHAR UNIQUE,
 ADD COLUMN profile_public_id VARCHAR UNIQUE,
 ADD COLUMN cover_public_id VARCHAR UNIQUE
+
+
+ALTER TABLE users
+DROP CONSTRAINT users_cover_img_url_key,
+DROP CONSTRAINT likes_user_id_key,
+DROP CONSTRAINT likes_user_id_key,
+DROP CONSTRAINT likes_user_id_key,

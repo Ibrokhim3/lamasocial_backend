@@ -14,20 +14,25 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb("invalid image file!", false);
+    return res.status(400).json("Invalid file type!");
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+});
 
 //
 
 router.get("/users", authCtr.GET_USERS);
 router.get("/user_info", verifyToken, authCtr.GET_USER_INFO);
-router.post(
-  "/registration",
-  upload.fields([
-    { name: "profileImg", maxCount: 1 },
-    { name: "coverImg", maxCount: 1 },
-  ]),
-  authCtr.REGISTER
-);
+router.post("/registration", upload.any(), authCtr.REGISTER);
 router.post("/login", authCtr.LOGIN);
 router.put("/update_user", authCtr.UPDATE_USER);
 // router.get("/get_users/:id", authCtr.GET_USERS);
