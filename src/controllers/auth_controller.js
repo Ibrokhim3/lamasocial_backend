@@ -26,8 +26,8 @@ export const authCtr = {
   },
   REGISTER: async (req, res) => {
     try {
-      console.log(req.file);
-      // const { userName, password, userEmail, password2 } = req.body;
+      const profileImg = req.files.profileImg[0].path;
+      const { userName, password, userEmail, password2 } = req.body;
 
       // const { name, size, mv } = req.files.profileImg;
 
@@ -83,41 +83,33 @@ export const authCtr = {
 
       // //Uploading file to the cloudinary server:
 
-      // let result = null;
-      // let result2 = null;
+      let result = null;
+      let result2 = null;
 
-      // const options = {
-      //   folder: "lamasocial",
-      //   use_filename: true,
-      //   unique_filename: false,
-      //   overwrite: true,
-      // };
+      const options = {
+        folder: "lamasocial_data",
+        use_filename: true,
+        unique_filename: false,
+        overwrite: true,
+      };
 
       // //file1
 
-      // try {
-      //   // result = await cloudinary.uploader.upload(
-      //   //   "assets/" + filename,
-      //   //   options
-      //   // );
+      try {
+        result = await cloudinary.uploader.upload(req.files.profileImg[0].path, options);
 
-      //   result = await cloudinary.uploader.upload(
-      //     __dirname + "/assets/" + filename,
-      //     options
-      //   );
+        if (!result) {
+          return res.status(500).json("Internal server error uploading image");
+        }
 
-      //   if (!result) {
-      //     return res.status(500).json("Internal server error uploading image");
-      //   }
-      //   // console.log(result);
-      //   // return result.public_id;
-      // } catch (error) {
-      //   // console.log(error.message);
-      //   return res.status(500).json({
-      //     error: true,
-      //     message: "Internal server error uploading image",
-      //   });
-      // }
+        // return result.public_id;
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+          error: true,
+          message: "Internal server error uploading image",
+        });
+      }
 
       // //file2
 
