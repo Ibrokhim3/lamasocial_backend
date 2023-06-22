@@ -159,26 +159,24 @@ export const authCtr = {
   },
   LOGIN: async (req, res) => {
     try {
-      const { user_email, password } = req.body;
+      const { userEmail, password } = req.body;
       const foundedUser = await pool.query(
         `SELECT * FROM users WHERE user_email = $1`,
-        [user_email]
+        [userEmail]
       );
       if (!foundedUser.rows[0]) {
-        return res.status(404).send("User not found");
+        return res.status(404).json("User not found");
       }
 
       const psw = await bcrypt.compare(password, foundedUser.rows[0].password);
 
       if (!psw) {
-        return res.send("Incorrect password!");
+        return res.status(400).json("Invalid password!");
       }
 
       let token = jwt.sign(
         {
           user_id: foundedUser.rows[0].user_id,
-          user_email: foundedUser.rows[0].user_email,
-          // profile_img: foundedUser.rows[0].profile_img,
         },
         process.env.SECRET_KEY,
         {
@@ -186,25 +184,8 @@ export const authCtr = {
         }
       );
 
-      const userInfo = jwt.verify(token, process.env.SECRET_KEY);
-      const { user_id } = userInfo;
-
-      const jwtInfo = await pool.query(`SELECT * FROM JWT`);
-
-      if (!jwtInfo.rows[0]) {
-        await pool.query(
-          `INSERT INTO jwt(user_id, user_email, token) VALUES($1, $2,$3) `,
-          [user_id, user_email, token]
-        );
-      }
-      await pool.query(`UPDATE jwt SET user_id=$1, user_email=$2, token=$3`, [
-        user_id,
-        user_email,
-        token,
-      ]);
-
       await pool.query(`UPDATE users SET islogged=true where user_id=$1`, [
-        user_id,
+        foundedUser.rows[0].user_id,
       ]);
 
       return res.status(201).json({
@@ -212,7 +193,8 @@ export const authCtr = {
         token,
       });
     } catch (error) {
-      return console.log(error.message);
+      console.log(error);
+      res.status(500).json(error);
     }
   },
   UPDATE_USER: async (req, res) => {
