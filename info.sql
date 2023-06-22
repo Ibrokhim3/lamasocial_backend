@@ -389,3 +389,12 @@ SELECT * FROM likes WHERE '330' = ANY(user_id); --search
 
 ALTER TABLE likes
 DROP CONSTRAINT likes_user_id_key;
+
+
+------
+
+
+ALTER TABLE users ADD COLUMN profile_img_url VARCHAR UNIQUE,
+ADD COLUMN cover_img_url VARCHAR UNIQUE,
+ADD COLUMN profile_public_id VARCHAR UNIQUE,
+ADD COLUMN cover_public_id VARCHAR UNIQUE

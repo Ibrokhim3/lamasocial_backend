@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import { __dirname } from "../../server.js";
 import { __filename } from "../../server.js";
 import { rmSync } from "fs";
+import { v4 } from "uuid";
+import cloudinary from "../config/cloudinary-config.js";
 
 export const authCtr = {
   //updateUsers API
@@ -24,71 +26,156 @@ export const authCtr = {
   },
   REGISTER: async (req, res) => {
     try {
-      const {
-        username,
-        password,
-        user_email,
-        password2,
-        avatar_url,
-        cover_url,
-      } = req.body;
+      console.log(req.file);
+      // const { userName, password, userEmail, password2 } = req.body;
 
-      // const { name, data, mimetype, size } = req.files.img;
-      // const filename = Date.now() + path.extname(name);
+      // const { name, size, mv } = req.files.profileImg;
 
-      //username ga validation qilsaboladi
+      // const { name: name2, size: size2, mv: mv2 } = req.files.coverImg;
 
-      const foundedUser = await pool.query(
-        `SELECT * from users where username=$1`,
-        [username]
-      );
+      // if (+size / 1048576 > 2 && +size2 / 1048576 > 2) {
+      //   return res
+      //     .status(400)
+      //     .json("The size of the profile-image must not be over 2mb");
+      // }
 
-      if (foundedUser.rows[0]) {
-        return res.send("Username already exists");
-      }
+      // const foundedUser = await pool.query(
+      //   `SELECT * from users where username=$1`,
+      //   [userName]
+      // );
 
-      const users = await pool.query(`SELECT * from users`);
+      // if (foundedUser.rows[0]) {
+      //   return res.status(400).json("Username already exists");
+      // }
 
-      const userEmail = users.rows.find((u) => u.user_email === user_email);
+      // const users = await pool.query(`SELECT * from users`);
 
-      if (userEmail) {
-        return res.status(400).send("This email already exists");
-      }
+      // const findUser = users.rows.find((u) => u.user_email === userEmail);
 
-      if (password !== password2) {
-        return res
-          .status(400)
-          .send("Passwords weren't mathched, please type again");
-      }
+      // if (findUser) {
+      //   return res.status(400).json("This email already exists");
+      // }
 
-      const hashPsw = await bcrypt.hash(password, 12);
+      // if (password !== password2) {
+      //   return res
+      //     .status(400)
+      //     .send("Passwords weren't matched, please try again");
+      // }
 
-      // const url = path.join(__dirname, "./upload_img/", filename);
+      // const hashPsw = await bcrypt.hash(password, 12);
 
-      const userId = await pool.query(
-        `INSERT INTO users(username, user_email, password) VALUES($1, $2, $3) returning user_id`,
-        [username, user_email, hashPsw]
-      );
+      // const filename = v4() + path.extname(name);
+      // const filename2 = v4() + path.extname(name2);
 
-      await pool.query(
-        `INSERT INTO avatar(avatar_url, user_id) VALUES($1, $2)`,
-        [avatar_url, userId.rows[0].user_id]
-      );
-
-      await pool.query(`INSERT INTO cover(cover_url, user_id) VALUES($1,$2)`, [
-        cover_url,
-        userId.rows[0].user_id,
-      ]);
-
-      // req.files.img.mv(url, function (err) {
-      //   if (err) {
-      //     return res.send(err);
-      //   }
+      // mv(path.resolve("assets/" + filename), (err) => {
+      //   if (err)
+      //     return res
+      //       .status(400)
+      //       .json("Something went wrong, while uploading a file");
       // });
+
+      // mv2(path.resolve("assets/" + filename2), (err) => {
+      //   if (err)
+      //     return res
+      //       .status(400)
+      //       .json("Something went wrong, while uploading a file");
+      // });
+
+      // //Uploading file to the cloudinary server:
+
+      // let result = null;
+      // let result2 = null;
+
+      // const options = {
+      //   folder: "lamasocial",
+      //   use_filename: true,
+      //   unique_filename: false,
+      //   overwrite: true,
+      // };
+
+      // //file1
+
+      // try {
+      //   // result = await cloudinary.uploader.upload(
+      //   //   "assets/" + filename,
+      //   //   options
+      //   // );
+
+      //   result = await cloudinary.uploader.upload(
+      //     __dirname + "/assets/" + filename,
+      //     options
+      //   );
+
+      //   if (!result) {
+      //     return res.status(500).json("Internal server error uploading image");
+      //   }
+      //   // console.log(result);
+      //   // return result.public_id;
+      // } catch (error) {
+      //   // console.log(error.message);
+      //   return res.status(500).json({
+      //     error: true,
+      //     message: "Internal server error uploading image",
+      //   });
+      // }
+
+      // //file2
+
+      // try {
+      //   result2 = await cloudinary.uploader.upload(
+      //     __dirname + "/assets/" + filename,
+      //     options
+      //   );
+      //   if (!result2) {
+      //     return res.status(500).json("Internal server error uploading image");
+      //   }
+      //   // console.log(result);
+      //   // return result.public_id;
+      // } catch (error) {
+      //   // console.log(error.message);
+      //   return res.status(500).json({
+      //     error: true,
+      //     message: "Internal server error uploading image",
+      //   });
+      // }
+
+      // const profileImgUrl = result?.secure_url;
+      // const coverImgUrl = result2?.secure_url;
+
+      // const profilePublicId = result?.public_id;
+      // const coverPublicId = result2?.public_id;
+
+      // //deleting the file from folder
+
+      // fs.unlink(path.resolve("assets/" + filename), function (err) {
+      //   if (err) throw err;
+      //   console.log("File deleted!");
+      // });
+
+      // fs.unlink(path.resolve("assets/" + filename2), function (err) {
+      //   if (err) throw err;
+      //   console.log("File deleted!");
+      // });
+
+      // const userId = await pool.query(
+      //   `INSERT INTO users(username, user_email, password, profile_img_url, cover_img_url, profile_public_id, cover_public_id ) VALUES($1, $2, $3, $4,$5,$6,$7) returning user_id`,
+      //   [
+      //     userName,
+      //     userEmail,
+      //     hashPsw,
+      //     profileImgUrl,
+      //     coverImgUrl,
+      //     profilePublicId,
+      //     coverPublicId,
+      //   ]
+      // );
 
       return res.status(201).json("User successfully registrated!");
     } catch (error) {
-      return console.log(error.message);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error uploading image",
+      });
     }
   },
   LOGIN: async (req, res) => {
