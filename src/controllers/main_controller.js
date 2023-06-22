@@ -1,54 +1,87 @@
-import { pool } from "../config/db_config.js";
-import path from "path";
-import { __dirname } from "../../server.js";
-import { __filename } from "../../server.js";
-import cloudinary from "cloudinary";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime.js";
 import jwt from "jsonwebtoken";
-import { log } from "console";
+import cloudinary from "../config/cloudinary-config.js";
+import { pool } from "../config/db_config.js";
 
 export const mainCtr = {
   GET_POSTS: async (req, res) => {
     try {
       const posts = await pool.query(
         //hammasini select qilish shart emas
-        `SELECT * FROM posts p JOIN users u ON p.created_by = u.user_id JOIN avatar a ON a.user_id=p.created_by JOIN likes l ON p.post_id=l.post_id`
+        `SELECT p.post_img_url, p.post_text, u.username, u.profile_img_url, l.* FROM posts p JOIN users u ON p.user_id = u.user_id JOIN likes l ON p.post_id=l.post_id`
       );
 
       const { token } = req.headers;
       const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
-      const userInfo = await pool.query(
-        `SELECT * FROM avatar a JOIN cover c ON a.user_id=c.user_id JOIN users u ON a.user_id=u.user_id where a.user_id=$1`,
-        [user_id]
-      );
+
+      // const userInfo = await pool.query(
+      //   `SELECT * FROM avatar a JOIN cover c ON a.user_id=c.user_id JOIN users u ON a.user_id=u.user_id where a.user_id=$1`,
+      //   [user_id]
+      // );
 
       //Select avatar_url va cover_url bolsa yaxshi ortiqcha narsa kerak emas
 
-      res.status(200).send({ posts: posts.rows, user: userInfo.rows });
+      res.status(200).send({
+        posts: posts.rows, //user: userInfo.rows//
+      });
     } catch (error) {
       return console.log(error.message);
     }
   },
   ADD_USER_POST: async (req, res) => {
     try {
-      const userData = await pool.query(`SELECT * FROM jwt`);
-      const { user_id } = userData.rows[0];
+      const { postText } = req.body;
+      const postImg = req.file;
+      const { token } = req.headers;
 
-      // const userData = await pool.query(`SELECT * FROM jwt`);
-      // const { user_id, user_name, image_title } = userData.rows[0];
+      const userData = jwt.verify(token, process.env.SECRET_KEY);
 
-      const { post_url, name, mimetype, size, public_id } = req.body;
+      if (+postImg?.size / 1048576 > 2) {
+        return res
+          .status(400)
+          .json("The size of the post-image must not be over 2mb");
+      }
 
-      console.log(post_url);
+      // //Uploading file to the cloudinary server:
 
-      // const filename = Date.now() + path.extname(name);
+      let result = null;
 
-      // const url = path.join(__dirname, "./upload_video/", filename);
+      const options = {
+        folder: "lamasocial_data",
+        use_filename: true,
+        unique_filename: false,
+        overwrite: true,
+      };
+
+      // //file1
+      try {
+        result = await cloudinary.uploader.upload(postImg.path, options);
+
+        if (!result) {
+          return res.status(500).json("Internal server error uploading image ");
+        }
+
+        // return result.public_id;
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+          error: true,
+          message: "Internal server error uploading image ",
+        });
+      }
+
+      const postImgUrl = result?.secure_url || null;
+
+      const postPublicId = result?.public_id || null;
 
       const postInfo = await pool.query(
-        `INSERT INTO posts(created_by, post_url, size) VALUES($1, $2, $3) RETURNING uploaded_time, post_id `,
-        [user_id, post_url, (+size / 1048576).toFixed(2)]
+        `INSERT INTO posts(user_id, username, post_img_url, post_public_id, post_text) VALUES($1, $2, $3, $4, $5) RETURNING uploaded_time, post_id`,
+        [
+          userData.user_id,
+          userData.userName,
+          postImgUrl,
+          postPublicId,
+          postText,
+        ]
       );
 
       const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
@@ -60,31 +93,6 @@ export const mainCtr = {
           postInfo.rows[0].post_id,
         ]);
       }
-
-      let ts = Date.now();
-
-      let date_time = new Date(ts);
-      let date = date_time.getDate();
-      let month = date_time.getMonth() + 1;
-      let year = date_time.getFullYear();
-      let hours = date_time.getHours();
-      let minutes = date_time.getMinutes();
-
-      console.log(date, month, hours, year, minutes);
-
-      dayjs.extend(relativeTime);
-
-      let a = dayjs(postInfo.rows[0].uploaded_time);
-
-      const timeAgo = dayjs().from(a);
-
-      console.log(timeAgo);
-
-      // req.files.video.mv(url, function (err) {
-      //   if (err) {
-      //     return res.send(err);
-      //   }
-      // });
 
       res.status(201).json("Post uploaded successfully!");
     } catch (error) {

@@ -405,3 +405,14 @@ DROP CONSTRAINT users_cover_img_url_key,
 DROP CONSTRAINT likes_user_id_key,
 DROP CONSTRAINT likes_user_id_key,
 DROP CONSTRAINT likes_user_id_key,
+
+CREATE TABLE posts(
+post_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+user_id VARCHAR NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+username VARCHAR NOT NULL,
+post_img_url VARCHAR NOT NULL,
+post_public_id VARCHAR NOT NULL,
+post_text VARCHAR, 
+uploaded_time TIMESTAMP(0) NOT NULL DEFAULT current_timestamp
+
+);

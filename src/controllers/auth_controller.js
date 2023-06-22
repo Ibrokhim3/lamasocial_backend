@@ -177,6 +177,7 @@ export const authCtr = {
       let token = jwt.sign(
         {
           user_id: foundedUser.rows[0].user_id,
+          userName: foundedUser.rows[0].username,
         },
         process.env.SECRET_KEY,
         {

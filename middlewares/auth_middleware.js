@@ -1,16 +1,24 @@
 import jwt from "jsonwebtoken";
-import { pool } from "../src/config/db_config.js";
 
 export const verifyToken = async (req, res, next) => {
-  const token = req.headers.token;
+  try {
+    const token = req.headers.token;
 
-  if (!token) {
-    return res.status(400).send("You have to log in to the system!");
-  }
-  const userData = jwt.verify(token, process.env.SECRET_KEY);
+    if (!token) {
+      return res.status(403).json("You are not authorized!");
+    }
+    const userData = jwt.verify(token, process.env.SECRET_KEY);
 
-  if (userData) {
-    return next();
+    if (userData) {
+      return next();
+    }
+    return res
+      .status(403)
+      .json("Token doesn't exist or you are not authorized!");
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ error: true, message: "Internal server error (token)" });
   }
-  res.send("Token doesn't exist or you are not authorized!");
 };
