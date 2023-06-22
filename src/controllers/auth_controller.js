@@ -29,8 +29,6 @@ export const authCtr = {
       const profileImg = req?.files[0];
       const coverImg = req?.files[1];
 
-      console.log(coverImg);
-
       const { userName, password, userEmail, password2 } = req.body;
 
       if (profileImg) {

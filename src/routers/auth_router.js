@@ -3,6 +3,8 @@ import { authCtr } from "../controllers/auth_controller.js";
 import { verifyToken } from "../../middlewares/auth_middleware.js";
 import multer from "multer";
 import { v4 } from "uuid";
+import { authValidationReg } from "../../validation/auth-validation.js";
+import { userValidate } from "../../middlewares/validation_middleware.js";
 
 const router = Router();
 
@@ -32,7 +34,7 @@ const upload = multer({
 
 router.get("/users", authCtr.GET_USERS);
 router.get("/user_info", verifyToken, authCtr.GET_USER_INFO);
-router.post("/registration", upload.any(), authCtr.REGISTER);
+router.post("/registration", upload.any(), userValidate, authCtr.REGISTER);
 router.post("/login", authCtr.LOGIN);
 router.put("/update_user", authCtr.UPDATE_USER);
 // router.get("/get_users/:id", authCtr.GET_USERS);
