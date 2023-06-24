@@ -16,13 +16,21 @@ export const authCtr = {
     return res.json(users.rows);
   },
   GET_USER_INFO: async (req, res) => {
-    const { token } = req.headers;
-    const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
-    const user = await pool.query(`SELECT * FROM users where user_id=$1`, [
-      user_id,
-    ]);
+    try {
+      const { token } = req.headers;
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
-    return res.json(user.rows[0]);
+      const user = await pool.query(`SELECT * FROM users where user_id=$1`, [
+        user_id,
+      ]);
+
+      return res.status(200).json(user.rows[0]);
+    } catch (error) {
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error uploading",
+      });
+    }
   },
   REGISTER: async (req, res) => {
     try {

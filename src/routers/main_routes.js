@@ -31,6 +31,7 @@ const upload = multer({
 //
 
 router.get("/posts", verifyToken, mainCtr.GET_POSTS);
+router.get("/user-posts", verifyToken, mainCtr.GET_USER_POSTS);
 router.get("/friends", mainCtr.GET_USER_FRIENDS);
 router.post("/likes", verifyToken, mainCtr.POST_LIKES);
 router.post(

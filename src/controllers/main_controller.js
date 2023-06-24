@@ -13,18 +13,45 @@ export const mainCtr = {
       const { token } = req.headers;
       const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
-      // const userInfo = await pool.query(
-      //   `SELECT * FROM avatar a JOIN cover c ON a.user_id=c.user_id JOIN users u ON a.user_id=u.user_id where a.user_id=$1`,
+      res.status(200).json({
+        posts: posts.rows,
+      });
+    } catch (error) {
+      console.log(error.message);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error uploading image ",
+      });
+    }
+  },
+  GET_USER_POSTS: async (req, res) => {
+    try {
+      const { token } = req.headers;
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+
+      // const posts = await pool.query(
+      //   //hammasini select qilish shart emas
+      //   `SELECT p.post_img_url, p.post_text, u.username, u.profile_img_url, l.* FROM posts p JOIN users u ON p.user_id = u.user_id JOIN likes l ON p.post_id=l.post_id where p.user_id=$1`,
       //   [user_id]
       // );
 
-      //Select avatar_url va cover_url bolsa yaxshi ortiqcha narsa kerak emas
+      const posts = await pool.query(
+        //hammasini select qilish shart emas
+        `SELECT p.post_img_url, p.post_text, l.* FROM posts p JOIN likes l ON p.post_id=l.post_id where p.user_id=$1`,
+        [user_id]
+      );
 
-      res.status(200).send({
-        posts: posts.rows, //user: userInfo.rows//
+      console.log(posts.rows);
+
+      return res.status(200).json({
+        posts: posts.rows,
       });
     } catch (error) {
-      return console.log(error.message);
+      console.log(error);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error uploading image ",
+      });
     }
   },
   ADD_USER_POST: async (req, res) => {
@@ -105,7 +132,7 @@ export const mainCtr = {
       const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
       const userFriends = await pool.query(
-        `SELECT u.username, a.avatar_url FROM users u JOIN avatar a ON u.user_id = a.user_id where u.user_id != $1`,
+        `SELECT u.username, u.profile_img_url FROM users u where u.user_id != $1`,
         [user_id]
       );
       res.status(200).send(userFriends.rows);
