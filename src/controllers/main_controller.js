@@ -10,8 +10,8 @@ export const mainCtr = {
         `SELECT p.post_img_url, p.post_text, u.username, u.profile_img_url, l.* FROM posts p JOIN users u ON p.user_id = u.user_id JOIN likes l ON p.post_id=l.post_id`
       );
 
-      const { token } = req.headers;
-      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+      // const { token } = req.headers;
+      // const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
       res.status(200).json({
         posts: posts.rows,
@@ -57,6 +57,11 @@ export const mainCtr = {
   ADD_USER_POST: async (req, res) => {
     try {
       const { postText } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json("Image was not uploaded");
+      }
+
       const postImg = req.file;
       const { token } = req.headers;
 
@@ -123,7 +128,10 @@ export const mainCtr = {
 
       res.status(201).json("Post uploaded successfully!");
     } catch (error) {
-      return console.log(error.message);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
     }
   },
   GET_USER_FRIENDS: async (req, res) => {
@@ -135,55 +143,67 @@ export const mainCtr = {
         `SELECT u.username, u.profile_img_url FROM users u where u.user_id != $1`,
         [user_id]
       );
-      res.status(200).send(userFriends.rows);
+
+      return res.status(200).send(userFriends.rows);
     } catch (error) {
-      return console.log(error.message);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
     }
   },
   POST_LIKES: async (req, res) => {
-    const { post_id } = req.body;
-    const { token } = req.headers;
+    try {
+      const { post_id } = req.body;
+      const { token } = req.headers;
 
-    const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
-    // const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
-    //   post_id,
-    // ]);
+      // const isLiked = await pool.query(`SELECT * FROM likes where post_id=$1`, [
+      //   post_id,
+      // ]);
 
-    // if (!isLiked.rows[0]) {
-    //   await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [post_id]);
-    // }
+      // if (!isLiked.rows[0]) {
+      //   await pool.query(`INSERT INTO likes(post_id) VALUES($1)`, [post_id]);
+      // }
 
-    const userId = await pool.query(
-      `SELECT user_id from likes where $1 =ANY(user_id) AND post_id=$2`,
-      [user_id, post_id]
-    );
+      const userId = await pool.query(
+        `SELECT user_id from likes where $1 =ANY(user_id) AND post_id=$2`,
+        [user_id, post_id]
+      );
 
-    let likeResult = 0;
+      let likeResult = 0;
 
-    const likesNum = await pool.query(`SELECT * FROM likes where post_id=$1`, [
-      post_id,
-    ]);
+      const likesNum = await pool.query(
+        `SELECT * FROM likes where post_id=$1`,
+        [post_id]
+      );
 
-    if (!userId.rows[0]) {
-      likeResult = likesNum.rows[0].likes + 1;
+      if (!userId.rows[0]) {
+        likeResult = likesNum.rows[0].likes + 1;
+
+        await pool.query(
+          `UPDATE likes SET likes=$1, user_id=array_append(user_id, $2) where post_id=$3`,
+          [likeResult, user_id, post_id]
+        );
+
+        return res.status(201).json("Liked");
+      }
+
+      likeResult = likesNum.rows[0].likes - 1;
 
       await pool.query(
-        `UPDATE likes SET likes=$1, user_id=array_append(user_id, $2) where post_id=$3`,
+        `UPDATE likes SET likes=$1, user_id=array_remove(user_id, $2) where post_id=$3`,
         [likeResult, user_id, post_id]
       );
 
-      return res.send("Like");
+      return res.status(201).json("Liked");
+    } catch (error) {
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
     }
-
-    likeResult = likesNum.rows[0].likes - 1;
-
-    await pool.query(
-      `UPDATE likes SET likes=$1, user_id=array_remove(user_id, $2) where post_id=$3`,
-      [likeResult, user_id, post_id]
-    );
-
-    return res.send("Dislike");
   },
   UPDATE_USER_VIDEOS: async (req, res) => {
     try {
@@ -210,19 +230,3 @@ export const mainCtr = {
     }
   },
 };
-
-const testFunc = () => {
-  const video_url =
-    "https://res.cloudinary.com/dephdgqpo/video/upload/v1682439157/youtube_videos/modp9tdtywvxiktaynec.mp4";
-
-  const indexUrl = video_url.indexOf("upload");
-
-  const download_url = video_url.slice(
-    indexUrl + 5,
-    0,
-    "f_auto/fl_attachment:pretty_flower"
-  );
-
-  return console.log(download_url);
-};
-testFunc();

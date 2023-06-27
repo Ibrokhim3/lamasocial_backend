@@ -36,7 +36,7 @@ router.get("/users", authCtr.GET_USERS);
 router.get("/user-info", verifyToken, authCtr.GET_USER_INFO);
 router.post("/registration", upload.any(), userValidate, authCtr.REGISTER);
 router.post("/login", authCtr.LOGIN);
-router.put("/update_user", authCtr.UPDATE_USER);
+router.put("/update-user", upload.any(), authCtr.UPDATE_USER);
 // router.get("/get_users/:id", authCtr.GET_USERS);
 
 export default router;

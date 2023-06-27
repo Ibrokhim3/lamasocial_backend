@@ -4,6 +4,7 @@ import multer from "multer";
 import { verifyToken } from "../../middlewares/auth_middleware.js";
 import { v4 } from "uuid";
 
+import { postValidate } from "../../middlewares/validation_middleware.js";
 const router = Router();
 
 //Multer
@@ -19,7 +20,6 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     cb("invalid image file!", false);
-    return res.status(400).json("Invalid file type!");
   }
 };
 
@@ -32,11 +32,12 @@ const upload = multer({
 
 router.get("/posts", verifyToken, mainCtr.GET_POSTS);
 router.get("/user-posts", verifyToken, mainCtr.GET_USER_POSTS);
-router.get("/friends", mainCtr.GET_USER_FRIENDS);
+router.get("/friends", verifyToken, mainCtr.GET_USER_FRIENDS);
 router.post("/likes", verifyToken, mainCtr.POST_LIKES);
 router.post(
-  "/create_post",
+  "/create-post",
   verifyToken,
+  // postValidate,
   upload.single("postImg"),
   mainCtr.ADD_USER_POST
 );

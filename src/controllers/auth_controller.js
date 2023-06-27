@@ -97,8 +97,6 @@ export const authCtr = {
         try {
           result = await cloudinary.uploader.upload(profileImg.path, options);
 
-          console.log(profileImg.path);
-
           if (!result) {
             return res
               .status(500)
@@ -161,7 +159,7 @@ export const authCtr = {
       console.log(error);
       return res.status(500).json({
         error: true,
-        message: "Internal server error uploading image ",
+        message: "Internal server error",
       });
     }
   },
@@ -202,67 +200,172 @@ export const authCtr = {
         token,
       });
     } catch (error) {
-      console.log(error);
-      res.status(500).json(error);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
     }
   },
   UPDATE_USER: async (req, res) => {
     try {
       const { token } = req.headers;
       const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
-      let { username, user_email, password, avatar_url, cover_url } = req.body;
 
       const foundUser = await pool.query(
         `SELECT * FROM users WHERE user_id=$1`,
         [user_id]
       );
 
-      const foundFiles = await pool.query(
-        `SELECT a.avatar_url, c.cover_url from avatar a JOIN cover c ON a.user_id=c.user_id`
-      );
-
       if (!foundUser.rows[0]) {
-        return res.status(404).send("User not found!");
+        return res.status(404).json("User not found!");
       }
 
-      const hashPsw = await bcrypt.hash(password, 12);
+      let { userName, userEmail, password } = req.body;
+
+      let profileImg = req?.files[0];
+      let coverImg = req?.files[1];
+
+      if (profileImg) {
+        if (+profileImg?.size / 1048576 > 2) {
+          return res
+            .status(400)
+            .json("The size of the profile-image must not be over 2mb");
+        }
+      }
+
+      if (coverImg) {
+        if (+coverImg?.size / 1048576 > 2) {
+          return res
+            .status(400)
+            .json("The size of the cover-image must not be over 2mb");
+        }
+      }
+
+      // //Uploading file to the cloudinary server:
+
+      let result = null;
+      let result2 = null;
+
+      const options = {
+        folder: "lamasocial_data",
+        use_filename: true,
+        unique_filename: false,
+        overwrite: true,
+      };
+
+      // //file1
+      if (profileImg) {
+        try {
+          result = await cloudinary.uploader.upload(profileImg.path, options);
+
+          if (!result) {
+            return res
+              .status(500)
+              .json("Internal server error uploading image ");
+          }
+
+          // return result.public_id;
+        } catch (error) {
+          console.log(error);
+          return res.status(500).json({
+            error: true,
+            message: "Internal server error uploading image ",
+          });
+        }
+      }
+
+      // //file2
+
+      if (coverImg) {
+        try {
+          result2 = await cloudinary.uploader.upload(coverImg.path, options);
+
+          if (!result2) {
+            return res
+              .status(500)
+              .json("Internal server error uploading image");
+          }
+          // console.log(result);
+          // return result.public_id;
+        } catch (error) {
+          // console.log(error.message);
+          return res.status(500).json({
+            error: true,
+            message: "Internal server error uploading",
+          });
+        }
+      }
+
+      const profileImgUrl = result?.secure_url;
+      const coverImgUrl = result2?.secure_url;
+
+      const profilePublicId = result?.public_id;
+      const coverPublicId = result2?.public_id;
+
+      let profilePublicId2 = null;
+      let coverPublicId2 = null;
+
+      const hashPsw = password && (await bcrypt.hash(password, 12));
 
       const {
-        username: u_username,
-        user_email: u_user_email,
+        username,
+        user_email,
         password: u_password,
+        profile_img_url,
+        cover_img_url,
+        profile_public_id,
+        cover_public_id,
       } = foundUser.rows[0];
 
-      const { avatar_url: a_avatar_url, cover_url: c_cover_url } =
-        foundFiles.rows[0];
-
-      username = username ? username : u_username;
-      user_email = user_email ? user_email : u_user_email;
+      userName = userName ? userName : username;
+      userEmail = userEmail ? userEmail : user_email;
       password = password ? hashPsw : u_password;
-      avatar_url = avatar_url ? avatar_url : a_avatar_url;
-      cover_url = cover_url ? cover_url : c_cover_url;
+      profileImg = profileImg ? profileImgUrl : profile_img_url;
+      coverImg = coverImg ? coverImgUrl : cover_img_url;
+      profilePublicId2 = profilePublicId ? profilePublicId : profile_public_id;
+      coverPublicId2 = coverPublicId ? coverPublicId : cover_public_id;
 
       await pool.query(
         `UPDATE users SET 
-        username=$1, user_email=$2, password=$3 where user_id=$4`,
-        [username, user_email, password, user_id]
+        username=$1, user_email=$2, password=$3,profile_img_url=$4,cover_img_url=$5,profile_public_id=$6, cover_public_id=$7 where user_id=$8`,
+        [
+          userName,
+          userEmail,
+          password,
+          profileImg,
+          coverImg,
+          profilePublicId2,
+          coverPublicId2,
+          user_id,
+        ]
       );
 
-      await pool.query(
-        `UPDATE avatar SET 
-        avatar_url=$1 where user_id=$2`,
-        [avatar_url, user_id]
-      );
+      if (req.files) {
+        try {
+          result = await cloudinary.api.delete_resources([
+            profile_public_id,
+            cover_public_id,
+          ]);
 
-      await pool.query(
-        `UPDATE cover SET 
-        cover_url=$1 where user_id=$2`,
-        [cover_url, user_id]
-      );
+          if (!result) {
+            return res.status(500).json("Internal server error");
+          }
+          // console.log(result);
+          // return result.public_id;
+        } catch (error) {
+          // console.log(error.message);
+          return res
+            .status(500)
+            .json({ error: true, message: "Internal server error" });
+        }
+      }
 
-      res.status(200).json(`Updated successfully`);
+      return res.status(200).json(`Updated successfully`);
     } catch (error) {
-      return console.log(error.message);
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
     }
   },
 };
