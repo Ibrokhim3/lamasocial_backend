@@ -17,7 +17,6 @@ export const mainCtr = {
         posts: posts.rows,
       });
     } catch (error) {
-      console.log(error.message);
       return res.status(500).json({
         error: true,
         message: "Internal server error uploading image ",
@@ -41,13 +40,10 @@ export const mainCtr = {
         [user_id]
       );
 
-      console.log(posts.rows);
-
       return res.status(200).json({
         posts: posts.rows,
       });
     } catch (error) {
-      console.log(error);
       return res.status(500).json({
         error: true,
         message: "Internal server error uploading image ",
@@ -140,7 +136,7 @@ export const mainCtr = {
       const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
 
       const userFriends = await pool.query(
-        `SELECT u.username, u.profile_img_url FROM users u where u.user_id != $1`,
+        `SELECT u.username, u.profile_img_url, u.isonline FROM users u where u.user_id != $1`,
         [user_id]
       );
 

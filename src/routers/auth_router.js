@@ -37,6 +37,7 @@ router.get("/user-info", verifyToken, authCtr.GET_USER_INFO);
 router.post("/registration", upload.any(), userValidate, authCtr.REGISTER);
 router.post("/login", authCtr.LOGIN);
 router.put("/update-user", upload.any(), authCtr.UPDATE_USER);
+router.put("/online", verifyToken, authCtr.ONLINE);
 // router.get("/get_users/:id", authCtr.GET_USERS);
 
 export default router;

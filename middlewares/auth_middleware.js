@@ -16,7 +16,6 @@ export const verifyToken = async (req, res, next) => {
       .status(403)
       .json("Token doesn't exist or you are not authorized!");
   } catch (error) {
-    console.log(error);
     return res
       .status(500)
       .json({ error: true, message: "Internal server error (token)" });

@@ -105,7 +105,6 @@ export const authCtr = {
 
           // return result.public_id;
         } catch (error) {
-          console.log(error);
           return res.status(500).json({
             error: true,
             message: "Internal server error uploading image ",
@@ -156,7 +155,6 @@ export const authCtr = {
 
       return res.status(201).json("User successfully registrated!");
     } catch (error) {
-      console.log(error);
       return res.status(500).json({
         error: true,
         message: "Internal server error",
@@ -191,15 +189,12 @@ export const authCtr = {
         }
       );
 
-      await pool.query(`UPDATE users SET islogged=true where user_id=$1`, [
-        foundedUser.rows[0].user_id,
-      ]);
-
       return res.status(201).json({
         msg: `You're logged in!`,
         token,
       });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({
         error: true,
         message: "Internal server error",
@@ -361,6 +356,34 @@ export const authCtr = {
       }
 
       return res.status(200).json(`Updated successfully`);
+    } catch (error) {
+      return res.status(500).json({
+        error: true,
+        message: "Internal server error",
+      });
+    }
+  },
+  ONLINE: async (req, res) => {
+    try {
+      const { isOnline } = req.body;
+      const { token } = req.headers;
+
+      const { user_id } = jwt.verify(token, process.env.SECRET_KEY);
+
+      const foundedUser = await pool.query(
+        `SELECT * FROM users WHERE user_id = $1`,
+        [user_id]
+      );
+      if (!foundedUser.rows[0]) {
+        return res.status(404).json("User not found");
+      }
+
+      await pool.query(`UPDATE users SET isonline=$1 where user_id=$2`, [
+        isOnline,
+        foundedUser.rows[0].user_id,
+      ]);
+
+      return res.status(201).json("Your status");
     } catch (error) {
       return res.status(500).json({
         error: true,
