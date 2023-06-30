@@ -1,12 +1,10 @@
-import path from "path";
-import { pool } from "../config/db_config.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { __dirname } from "../../server.js";
-import { __filename } from "../../server.js";
-import { rmSync } from "fs";
-import { v4 } from "uuid";
 import cloudinary from "../config/cloudinary-config.js";
+import { pool } from "../config/db_config.js";
+import crypto from "crypto";
+import sendEmail from "../../utils/send-email.js";
+import { rmSync } from "fs";
 
 export const authCtr = {
   //updateUsers API
@@ -388,6 +386,84 @@ export const authCtr = {
       return res.status(500).json({
         error: true,
         message: "Internal server error",
+      });
+    }
+  },
+  SEND_EMAIL: async (req, res) => {
+    try {
+      const { userEmail } = req.body;
+
+      const user = await pool.query(`SELECT * from users where user_email=$1`, [
+        userEmail,
+      ]);
+
+      if (!user) {
+        return res.status(404).json("user with given email address not found");
+      }
+
+      let token = await pool.query(`SELECT * from token where user_id=$1`, [
+        user.rows[0].user_id,
+      ]);
+
+      if (!token.rows[0]) {
+        await pool.query(
+          `INSERT INTO token( user_id, token) VALUES($1,$2) RETURNING token`,
+          [user.rows[0].user_id, crypto.randomBytes(32).toString("hex")]
+        );
+      }
+
+      const link = `Please go to this link: http://localhost:${3000}/lamasocial/${
+        user.rows[0].user_id
+      }/${token.rows[0].token}`;
+
+      await sendEmail(user.rows[0].user_email, "Password reset", link);
+
+      return res
+        .status(201)
+        .json("Password reset link sent to your email account. Please check");
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        error: true,
+        message: "Error occured while sending email",
+      });
+    }
+  },
+  SET_NEW_PASS: async (req, res) => {
+    try {
+      const user = await pool.query(`SELECT * from users where user_id=$1`, [
+        req.params.userId,
+      ]);
+
+      if (!user) {
+        return res.status(400).json("invalid link or expired");
+      }
+
+      const token = await pool.query(
+        `SELECT * from token where user_id=$1 AND token=$2`,
+        [req.params.userId, req.params.token]
+      );
+
+      if (!token.rows) {
+        return res.status(400).json("Invalid link or expired");
+      }
+
+      const hashPsw = await bcrypt.hash(req.body.password, 12);
+
+      await pool.query(`UPDATE users SET password=$1 where user_id=$2`, [
+        hashPsw,
+        req.params.userId,
+      ]);
+
+      await pool.query(`DELETE from token where user_id=$1`, [
+        req.params.userId,
+      ]);
+
+      return res.status(200).json("password reset sucessfully.");
+    } catch (error) {
+      return res.status(500).json({
+        error: true,
+        message: "Error occured while sending email",
       });
     }
   },

@@ -38,6 +38,8 @@ router.post("/registration", upload.any(), userValidate, authCtr.REGISTER);
 router.post("/login", authCtr.LOGIN);
 router.put("/update-user", upload.any(), authCtr.UPDATE_USER);
 router.put("/online", verifyToken, authCtr.ONLINE);
+router.post("/password-reset", authCtr.SEND_EMAIL);
+router.put("/:userId/:token", authCtr.SET_NEW_PASS);
 // router.get("/get_users/:id", authCtr.GET_USERS);
 
 export default router;

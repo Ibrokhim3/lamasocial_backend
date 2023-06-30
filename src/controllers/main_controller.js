@@ -7,7 +7,7 @@ export const mainCtr = {
     try {
       const posts = await pool.query(
         //hammasini select qilish shart emas
-        `SELECT p.post_img_url, p.post_text, u.username, u.profile_img_url, l.* FROM posts p JOIN users u ON p.user_id = u.user_id JOIN likes l ON p.post_id=l.post_id`
+        `SELECT p.post_img_url, p.post_text, u.username, u.profile_img_url, p.uploaded_time, l.* FROM posts p JOIN users u ON p.user_id = u.user_id JOIN likes l ON p.post_id=l.post_id`
       );
 
       // const { token } = req.headers;
@@ -53,6 +53,8 @@ export const mainCtr = {
   ADD_USER_POST: async (req, res) => {
     try {
       const { postText } = req.body;
+
+      console.log(postText);
 
       if (!req.file) {
         return res.status(400).json("Image was not uploaded");

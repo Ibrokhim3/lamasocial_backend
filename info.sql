@@ -17,6 +17,14 @@ CREATE TABLE likes(
 
 );
 
+CREATE TABLE token(
+    user_id VARCHAR NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token VARCHAR NOT NULL,
+    created_at TIMESTAMP DEFAULT current_timestamp,
+    expires INT DEFAULT 3600 
+
+);
+
 
 CREATE TABLE posts(
      post_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
