@@ -405,7 +405,7 @@ export const authCtr = {
         user.rows[0].user_id,
       ]);
 
-      if (!token.rows[0]) {
+      if (!token?.rows[0]) {
         await pool.query(
           `INSERT INTO token( user_id, token) VALUES($1,$2) RETURNING token`,
           [user.rows[0].user_id, crypto.randomBytes(32).toString("hex")]
@@ -414,7 +414,7 @@ export const authCtr = {
 
       const link = `Please go to this link: http://localhost:${3000}/lamasocial/${
         user.rows[0].user_id
-      }/${token.rows[0].token}`;
+      }/${token?.rows[0]?.token}`;
 
       await sendEmail(user.rows[0].user_email, "Password reset", link);
 
@@ -422,7 +422,6 @@ export const authCtr = {
         .status(201)
         .json("Password reset link sent to your email account. Please check");
     } catch (error) {
-      console.log(error);
       return res.status(500).json({
         error: true,
         message: "Error occured while sending email",

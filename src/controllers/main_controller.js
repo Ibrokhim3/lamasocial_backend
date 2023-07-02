@@ -54,8 +54,6 @@ export const mainCtr = {
     try {
       const { postText } = req.body;
 
-      console.log(postText);
-
       if (!req.file) {
         return res.status(400).json("Image was not uploaded");
       }
