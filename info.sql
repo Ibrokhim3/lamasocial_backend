@@ -6,7 +6,13 @@ CREATE TABLE users(
      user_id VARCHAR UNIQUE NOT NULL DEFAULT gen_random_uuid(),
      username VARCHAR(50) NOT NULL,
      user_email VARCHAR(50) UNIQUE NOT NULL,
-     password VARCHAR(30) NOT NULL
+     password VARCHAR NOT NULL,
+     isonline BOOLEAN DEFAULT false,
+     profile_img_url VARCHAR UNIQUE,
+     cover_img_url VARCHAR UNIQUE,
+     profile_public_id VARCHAR UNIQUE, 
+     cover_public_id VARCHAR UNIQUE
+
 );
 
 CREATE TABLE likes(
