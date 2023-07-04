@@ -413,9 +413,7 @@ export const authCtr = {
         );
       }
 
-      const link = `Please go to this link: http://localhost:${3000}/lamasocial/${
-        user.rows[0].user_id
-      }/${token?.rows[0]?.token}`;
+      const link = `Please go to this link: https://lamasocial-ibrokhim.netlify.app/lamasocial/${user.rows[0].user_id}/${token?.rows[0]?.token}`;
 
       await sendEmail(user.rows[0].user_email, "Password reset", link);
 
